@@ -1,3 +1,18 @@
-This is just a test file to see if other users can use their own github nice comment files
-Please dont use this feature to be mean.
-OR I will cry
+def comment_and_like_video(driver,links, comment_list):
+    for link in links:
+        driver.get(link)
+        time.sleep(3)
+        comment_box = driver.find_element(By.XPATH,'/html/body/ytd-app/div[1]/ytd-page-manager/ytd-watch-flexy/div[5]/div[1]/div/div[6]/div[1]/div[2]/ytd-video-primary-info-renderer/div/div/div[3]/div/ytd-menu-renderer/div[1]/ytd-toggle-button-renderer[1]/a/yt-icon-button')
+        driver.execute_script("arguments[0].scrollIntoView(true);", comment_box)
+        time.sleep(2)
+        like_button = driver.find_element(By.XPATH,'//*[@id="top-level-buttons-computed"]/ytd-toggle-button-renderer[1]').get_attribute("class")  # Looks at if like button has been pressed. If it has active in the name, then it is already liked.
+        html_nightmare = like_button.split()
+        if not "style-default-active" in html_nightmare:  # Likes the video if it has not already been liked.
+            driver.find_element(By.XPATH,'/html/body/ytd-app/div[1]/ytd-page-manager/ytd-watch-flexy/div[5]/div[1]/div/div[6]/div[1]/div[2]/ytd-video-primary-info-renderer/div/div/div[3]/div/ytd-menu-renderer/div[1]/ytd-toggle-button-renderer[1]/a/yt-icon-button').click()  # This will click the like button for the video.
+        driver.find_element(By.ID, "placeholder-area").click()  ##This selected youtube comment box, COMMENT BOX NEEDS TO BE CLICKED
+        comment = random.choice(comment_list)
+        driver.find_element(By.ID, "contenteditable-root").send_keys(comment)  ##Types in Comment
+        time.sleep(3)  ##Just tells system to wait a second, to aviod google bot dectections
+        driver.find_element(By.XPATH, '/html/body/ytd-app/div[1]/ytd-page-manager/ytd-watch-flexy/div[5]/div[1]/div/ytd-comments/ytd-item-section-renderer/div[1]/ytd-comments-header-renderer/div[5]/ytd-comment-simplebox-renderer/div[3]/ytd-comment-dialog-renderer/ytd-commentbox/div[2]/div/div[4]/div[5]/ytd-button-renderer[2]/a/tp-yt-paper-button').click()  # Clicks the post comment.
+        time.sleep(1)
+        print(f'({comment}) has been commeneted on Youtube Link:{link}') #Maybe also include a way for it to grab the youtube title, make it easier to read.
