@@ -1,14 +1,63 @@
+import PySimpleGUI as sg
+import time
+import requests
+import base64
+import random
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.by import By
+import undetected_chromedriver as uc
+
+
+
+def file_to_comment_paragraph(nowner = "Monte-Python2022",nrepo = "YoutubePythonBot", npath = "Nice Comments File"):   #Lets user add their own github comment file. Leave blank for mine.
+    owner = nowner
+    repo = nrepo
+    path = npath
+    comment_list = []
+    response = requests.get(f'https://api.github.com/repos/{owner}/{repo}/contents/{path}')
+    data = response.json()
+    b64_data = base64.b64decode(data['content'])
+    final_decoded = b64_data.decode('ascii')
+    for line in final_decoded.splitlines():
+        nline = line
+        comment_list.append(nline)
+    return comment_list
+
+def install_chrome_to_system():
+    webdriver.Chrome(service=Service(ChromeDriverManager().install()))  # -If you dont have it downloaded.
+
+def run_uc_chrome():
+    chrome_options = Options()
+    chrome_options.add_experimental_option("detach",True)  # allows for the window to stay open, maybe add as option in final edit. Its not working with uc.
+    driver = uc.Chrome(use_subprocess=True, chrome_options=chrome_options)
+    return driver
+
+def login_into_youtube(driver, email_username = "iamnotarobotpython@gmail.com", email_password = "Python!Please_give_me_100_on_this_project@2022!YoutubeBot"):
+    driver.get("https://accounts.google.com/signin/v2/identifier?service=youtube&uilel=3&passive=true&continue=https%3A%2F%2Fwww.youtube.com%2Fsignin%3Faction_handle_signin%3Dtrue%26app%3Ddesktop%26hl%3Den%26next%3Dhttps%253A%252F%252Fwww.youtube.com%252F&hl=en&ec=65620&flowName=GlifWebSignIn&flowEntry=ServiceLogin")  #Google Login Page
+    driver.find_element(By.ID, "identifierId").send_keys(email_username)
+    time.sleep(1.5)
+    driver.find_element(By.CLASS_NAME, "VfPpkd-vQzf8d" ).click()
+    time.sleep(1)
+    driver.find_element(By.NAME, "password").send_keys(email_password)
+    time.sleep(.5)
+    driver.find_element(By.CLASS_NAME, "VfPpkd-vQzf8d" ).click()
+    print("Bot has succsfully logged into Google.")
+    time.sleep(1)
+
 def comment_and_like_video(driver,links, comment_list):
     for link in links:
         driver.get(link)
         time.sleep(3)
         comment_box = driver.find_element(By.XPATH,'/html/body/ytd-app/div[1]/ytd-page-manager/ytd-watch-flexy/div[5]/div[1]/div/div[6]/div[1]/div[2]/ytd-video-primary-info-renderer/div/div/div[3]/div/ytd-menu-renderer/div[1]/ytd-toggle-button-renderer[1]/a/yt-icon-button')
-        driver.execute_script("arguments[0].scrollIntoView(true);", comment_box)
-        time.sleep(2)
         like_button = driver.find_element(By.XPATH,'//*[@id="top-level-buttons-computed"]/ytd-toggle-button-renderer[1]').get_attribute("class")  # Looks at if like button has been pressed. If it has active in the name, then it is already liked.
         html_nightmare = like_button.split()
         if not "style-default-active" in html_nightmare:  # Likes the video if it has not already been liked.
             driver.find_element(By.XPATH,'/html/body/ytd-app/div[1]/ytd-page-manager/ytd-watch-flexy/div[5]/div[1]/div/div[6]/div[1]/div[2]/ytd-video-primary-info-renderer/div/div/div[3]/div/ytd-menu-renderer/div[1]/ytd-toggle-button-renderer[1]/a/yt-icon-button').click()  # This will click the like button for the video.
+        driver.execute_script("arguments[0].scrollIntoView(true);", comment_box)
+        time.sleep(2)
         driver.find_element(By.ID, "placeholder-area").click()  ##This selected youtube comment box, COMMENT BOX NEEDS TO BE CLICKED
         comment = random.choice(comment_list)
         driver.find_element(By.ID, "contenteditable-root").send_keys(comment)  ##Types in Comment
@@ -16,3 +65,75 @@ def comment_and_like_video(driver,links, comment_list):
         driver.find_element(By.XPATH, '/html/body/ytd-app/div[1]/ytd-page-manager/ytd-watch-flexy/div[5]/div[1]/div/ytd-comments/ytd-item-section-renderer/div[1]/ytd-comments-header-renderer/div[5]/ytd-comment-simplebox-renderer/div[3]/ytd-comment-dialog-renderer/ytd-commentbox/div[2]/div/div[4]/div[5]/ytd-button-renderer[2]/a/tp-yt-paper-button').click()  # Clicks the post comment.
         time.sleep(1)
         print(f'({comment}) has been commeneted on Youtube Link:{link}') #Maybe also include a way for it to grab the youtube title, make it easier to read.
+    driver.quit()
+
+
+sg.theme('BluePurple')
+layout = [[sg.Text(('Selenium Python Youtube Bot'), font = ("Arial, 25"), key='title')],
+          [sg.Text(("If you have not run this program before, click this button to download chromedriver"), key = "driverinfo_text")],
+          [sg.Button(("Run"), key = "driver_button", enable_events= True)],
+          [sg.Text("ChromeDriver has been downloaded. If you have problems, try to restart the program", text_color = "red", key = "driver_text", visible = False)],
+          [sg.Text(('Click the checkbox if you want to use Your own email (leave unchecked for mine)'),
+                   key = "email-info"), sg.Checkbox("", key = 'default_email', enable_events = True)],
+          [sg.Text(("WARNING:Program will break if you use email not ending in @gmail.com or if it asks for recaptcha.\nThe email will also need to have a channel created for it. Recommended to use throw away email"),
+                   text_color = "red", key = "email_warning", visible = False)],
+          [sg.Text(("Email:"), key = "email_text", visible = False), sg.Input(key = "email_input", visible = False)],
+          [sg.Text(("Password:"), key = "email_password", visible = False), sg.Input(key = "password_input", visible = False)],
+          [sg.Text('Enter your links here(Enter each one individually):'), sg.Text(size = (15, 1), key ='link_text')],
+          [sg.Input(key='-IN-', do_not_clear = False)],
+          [sg.Button("Update List", button_color = ('white', 'red'))],
+          [sg.Button("Run Bot", key = "Run_Bot", button_color = ("black", "white"))],
+          [sg.Text("Comments has been successfully posted", key = "success_text", visible= False)],
+          [sg.Push(), sg.Button('Exit')]]
+
+window = sg.Window('Pattern 2B', layout)
+links = []
+toggle_email = False
+while True:  # Event Loop
+    event, values = window.read()
+    if event == sg.WIN_CLOSED or event == 'Exit':
+        break
+    if event == "driver_button":
+        toggle_email = not toggle_email
+        install_chrome_to_system()
+        window.find_element("driver_text").Update(visible = True)
+        window.refresh()
+
+    if event == "default_email":
+        toggle_email = not toggle_email
+        window.find_element("email_warning").Update(visible=toggle_email)
+        window.find_element("email_text").Update(visible=toggle_email)    #Figure out how to resize this window after you unlick the box.
+        window.find_element("email_input").Update(visible=toggle_email)
+        window.find_element("email_password").Update(visible=toggle_email)
+        window.find_element("password_input").Update(visible=toggle_email)
+
+    if event == 'Update List':
+        # Update the "output" text element to be the value of "input" element
+        window['link_text'].update()
+        links.append(values['-IN-'])
+    if event == "Run_Bot":          #Make sure to include error message for raise_for_status, bad email, if bot cant coment on video.
+        driver = run_uc_chrome()
+        check = "<PySimpleGUI.PySimpleGUI"      #This comes from the emtpy email textbox.
+        print(values['default_email'])
+
+        if not values['default_email']: #This checks if the user has entered in there own email. If they have not, it will use mine as the default.
+            login_into_youtube(driver)
+            comment_list = file_to_comment_paragraph()
+            comment_and_like_video(driver, links, comment_list)
+        else:
+            try:
+                email = values['email_input']
+                password = values['password_input']
+                login_into_youtube(driver, email, password)
+                comment_list = file_to_comment_paragraph()
+                comment_and_like_video(driver, links, comment_list)
+                window.find_element("success_text").Update(visible=toggle_email)
+            except Exception:
+                print("Wrong Password")
+        print("Congrats!")
+
+window.close()
+
+#Need to add raise for repsonses and a bunch of try expects to make it better.
+
+
